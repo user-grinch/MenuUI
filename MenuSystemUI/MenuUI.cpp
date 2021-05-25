@@ -35,6 +35,14 @@ uchar normal_text_red = (uchar)ini.GetInteger("color", "normal_text_red", 0);
 uchar normal_text_green = (uchar)ini.GetInteger("color", "normal_text_green", 0);
 uchar normal_text_blue = (uchar)ini.GetInteger("color", "normal_text_blue", 0);
 
+uchar title_text_red = (uchar)ini.GetInteger("color", "title_text_red", 0);
+uchar title_text_green = (uchar)ini.GetInteger("color", "title_text_green", 0);
+uchar title_text_blue = (uchar)ini.GetInteger("color", "title_text_blue", 0);
+
+uchar title_box_red = (uchar)ini.GetInteger("color", "title_box_red", 0);
+uchar title_box_green = (uchar)ini.GetInteger("color", "title_box_green", 0);
+uchar title_box_blue = (uchar)ini.GetInteger("color", "title_box_blue", 0);
+
 uchar highlight_text_red = (uchar)ini.GetInteger("color", "highlight_text_red", 0);
 uchar highlight_text_green = (uchar)ini.GetInteger("color", "highlight_text_green", 0);
 uchar highlight_text_blue = (uchar)ini.GetInteger("color", "highlight_text_blue", 0);
@@ -60,6 +68,7 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
     float header_padding = 0;
     tMenuPanel* hMenu = MenuNumber[panelId];
     size_t column_count = hMenu->m_nNumColumns;
+    float tcolumn_width = 0.0f;
     size_t row_count = hMenu->m_nNumRows;
     float font_scaleX = RsGlobal.maximumWidth * 0.00055f * normal_scaleX;
     float font_scaleY = RsGlobal.maximumHeight * 0.0015f * normal_scaleY;
@@ -68,8 +77,8 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
     bool draw_headers = false;
 
     CFont::SetFontStyle(font_type);
+    CFont::SetColor(CRGBA(title_text_red, title_text_green, title_text_blue, 255));
     CFont::SetOrientation(eFontAlignment::ALIGN_LEFT);
-    CFont::SetColor(CRGBA(255, 255, 255, 255));
     CFont::SetScale(font_scaleX, font_scaleY);
     CFont::SetDropColor(CRGBA(0, 0, 0, 0));
 
@@ -79,8 +88,8 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
         if (pText[0] != ' ' && pText[0] != '\0')
         {
             draw_headers = true;
-            break;
         }
+        tcolumn_width += hMenu->m_afColumnWidth[column];
     }
 
     // Draw menu background
@@ -91,6 +100,13 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
         header_padding = 75;
         window_size.left = hMenu->m_vPosn.x;
         window_size.right = RsGlobal.maximumWidth / 3.75f + window_size.left;
+
+        float original_right = RsGlobal.maximumWidth * 0.03124f + hMenu->m_vPosn.x;
+        float offset = (original_right - window_size.right) / 4;
+        hbox_left -= offset;
+        window_size.left -= offset;
+        window_size.right -= offset;
+
         window_size.top = hMenu->m_vPosn.y;
         window_size.bottom = window_size.top + header_padding;
         
@@ -101,7 +117,7 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
         }
 
         // window
-        FrontEndMenuManager.DrawWindow(window_size, "", 0, CRGBA(accent_color_red, accent_color_green, accent_color_blue, 250), 0, 1);
+        FrontEndMenuManager.DrawWindow(window_size, "", 0, CRGBA(title_box_red, title_box_green, title_box_blue, 250), 0, 1);
 
         char* pText = TheText.Get(hMenu->m_acTitle);
         float text_posX = window_size.left + (window_size.right - window_size.left) / 2;
@@ -122,7 +138,7 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
         // footer
         window_size.top = window_size.bottom;
         window_size.bottom += hbox_height;
-        FrontEndMenuManager.DrawWindow(window_size, "", 0, CRGBA(accent_color_red, accent_color_green, accent_color_blue, 250), 0, 1);
+        FrontEndMenuManager.DrawWindow(window_size, "", 0, CRGBA(title_box_red, title_box_green, title_box_blue, 250), 0, 1);
     }
 
     float hbox_top =  hMenu->m_vPosn.y + header_padding;
