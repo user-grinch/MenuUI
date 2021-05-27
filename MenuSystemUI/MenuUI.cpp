@@ -9,6 +9,7 @@
 #include "CMessages.h"
 #include "CText.h"
 #include "INIReader.h"
+#include <sstream>
 
 #define uchar unsigned char
 #define MENU_ALPHA 200
@@ -20,8 +21,8 @@ INIReader ini(PLUGIN_PATH((char*)"MenuUI.ini"));
 
 int font_type = ini.GetInteger("font", "type", 1);
 int title_font_type = ini.GetInteger("font", "title_type", 1);
-float title_scaleX = ini.GetFloat("font", "title_scaleX", 1.5f);
-float title_scaleY = ini.GetFloat("font", "title_scaleY", 1.5f);
+float title_mulX = ini.GetFloat("font", "title_mulX", 1.5f);
+float title_mulY = ini.GetFloat("font", "title_mulY", 1.5f);
 float normal_scaleX = ini.GetFloat("font", "normal_scaleX", 1.0f);
 float normal_scaleY = ini.GetFloat("font", "normal_scaleY", 1.0f);
 
@@ -62,6 +63,40 @@ public:
     }
 } menuSystemUI;
 
+void WrapXCenteredPrint(char* pText, float window_width, float text_posX, float text_posY)
+{
+    float font_width = CFont::GetStringWidth(pText, true, false);
+
+    if (font_width <= window_width)
+    {
+        CFont::PrintString(text_posX, text_posY, pText);
+        return;
+    }
+
+    std::istringstream ss(pText);
+    std::string buf, temp;
+    do {
+        std::string word;
+        ss >> word;
+
+        temp += (temp == "") ? word : (" " + word);
+        font_width = CFont::GetStringWidth((char*)temp.c_str(), true, false);
+
+        if (font_width < window_width && word != "")
+            buf += " " + word;
+        else
+        {
+            temp = word;
+            CFont::PrintString(text_posX, text_posY, (char*)buf.c_str());
+            CRect rect;
+            CFont::GetTextRect(&rect, text_posX, text_posY, (char*)buf.c_str());
+            text_posY -= (rect.bottom-rect.top) / 1.3f;
+            buf = word;
+        }
+
+    } while (ss);
+}
+
 void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
 {
     CRect window_size;
@@ -69,6 +104,7 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
     tMenuPanel* hMenu = MenuNumber[panelId];
     size_t column_count = hMenu->m_nNumColumns;
     float tcolumn_width = 0.0f;
+    float window_width = 999.0f;
     size_t row_count = hMenu->m_nNumRows;
     float font_scaleX = RsGlobal.maximumWidth * 0.00055f * normal_scaleX;
     float font_scaleY = RsGlobal.maximumHeight * 0.0015f * normal_scaleY;
@@ -76,12 +112,14 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
     float hbox_left = RsGlobal.maximumWidth * 0.015625f + hMenu->m_vPosn.x;
     bool draw_headers = false;
 
+    // default font stuff
     CFont::SetFontStyle(font_type);
     CFont::SetColor(CRGBA(title_text_red, title_text_green, title_text_blue, 255));
     CFont::SetOrientation(eFontAlignment::ALIGN_LEFT);
     CFont::SetScale(font_scaleX, font_scaleY);
     CFont::SetDropColor(CRGBA(0, 0, 0, 0));
 
+    // check if headers contain text
     for (size_t column = 0; column < column_count; ++column)
     {
         char* pText = TheText.Get(hMenu->m_aacColumnHeaders[column]);
@@ -121,15 +159,16 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
 
         char* pText = TheText.Get(hMenu->m_acTitle);
         float text_posX = window_size.left + (window_size.right - window_size.left) / 2;
-        float text_posY = window_size.top + (window_size.bottom - window_size.top) / 2 - 5.0f;
-        
-        CFont::SetFontStyle(title_font_type);
+        float text_posY = window_size.top + (window_size.bottom - window_size.top) / 2 - 20.0f;
+        window_width = window_size.right - window_size.left;
+
         CFont::SetOrientation(eFontAlignment::ALIGN_CENTER);
-        CFont::SetScale(font_scaleX * title_scaleX, font_scaleY * title_scaleY);
-        CFont::PrintString(text_posX, text_posY, pText);
+        CFont::SetFontStyle(title_font_type);
+        CFont::SetScale(font_scaleX * title_mulX, font_scaleY * title_mulY);
+        WrapXCenteredPrint(pText, window_width, text_posX, text_posY);
         CFont::SetScale(font_scaleX, font_scaleY);
-        CFont::SetOrientation(eFontAlignment::ALIGN_LEFT);
         CFont::SetFontStyle(font_type);
+        CFont::SetOrientation(eFontAlignment::ALIGN_LEFT);
         
         window_size.top += header_padding;
         window_size.bottom = window_size.top + (row_draw_count * hbox_height);
@@ -150,9 +189,16 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
         for (size_t column = 0; column < column_count; ++column)
         {
             char* pText = TheText.Get(hMenu->m_aacColumnHeaders[column]);
-            float width = column == 0 ? 0 : hMenu->m_afColumnWidth[column - 1] + 50.0f;
+            float width_offset = column == 0 ? 0 : hMenu->m_afColumnWidth[column - 1] + 50.0f;
+            float scaleX = font_scaleX;
+            float font_width = CFont::GetStringWidth(pText, true, false);
+
+            if (font_width > window_width)
+                scaleX = font_scaleX - 1 + window_width / font_width;
+
+            CFont::SetScale(scaleX, font_scaleY);
+            CFont::PrintString(hbox_left + width_offset, text_top, pText);
             CFont::SetScale(font_scaleX, font_scaleY);
-            CFont::PrintString(hbox_left + width, text_top, pText);
             hbox_top += hbox_height;
         }
         hbox_top -= hbox_height; // fix
@@ -196,12 +242,12 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
                     color = { 128, 128, 128, MENU_ALPHA };
 
                 CFont::SetColor(color);
-                float width = column == 0 ? 0 : hMenu->m_afColumnWidth[column - 1] + 50.0f;
+                float width_offset = column == 0 ? 0 : hMenu->m_afColumnWidth[column - 1] + 50.0f;
 
                 if (high_light)
                 {
                     CRect size;
-                    CFont::GetTextRect(&size, hbox_left + width, hbox_top, pText);
+                    CFont::GetTextRect(&size, hbox_left + width_offset, hbox_top, pText);
 
                     float text_height = size.bottom - size.top + 5.0f;
                     CRect pos;
@@ -211,7 +257,17 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
                     pos.bottom = hbox_top;
                     FrontEndMenuManager.DrawWindow(pos, "", 0, high_light_color, 0, 1);
                 }
-                CFont::PrintString(hbox_left + width, hbox_top, pText);
+                float scaleX = font_scaleX;
+                float font_width = CFont::GetStringWidth(pText, true, false);
+
+                if (font_width > window_width)
+                {
+                    scaleX = font_scaleX - 1 + window_width / font_width;
+                }
+                
+                CFont::SetScale(scaleX, font_scaleY);
+                CFont::PrintString(hbox_left + width_offset, hbox_top, pText);
+                CFont::SetScale(font_scaleX, font_scaleY);
             }
         }
         hbox_top += hbox_height;
