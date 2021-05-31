@@ -12,45 +12,67 @@
 #include <sstream>
 
 #define uchar unsigned char
-#define MENU_ALPHA 200
+#define WINDOW_ALPHA 200
+#define TITLE_ALPHA 250
 
 using namespace plugin;
 
 void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont);
 INIReader ini(PLUGIN_PATH((char*)"MenuUI.ini"));
 
-int font_type = ini.GetInteger("font", "type", 1);
-int title_font_type = ini.GetInteger("font", "title_type", 1);
-float title_mulX = ini.GetFloat("font", "title_mulX", 1.5f);
-float title_mulY = ini.GetFloat("font", "title_mulY", 1.5f);
-float normal_scaleX = ini.GetFloat("font", "normal_scaleX", 1.0f);
-float normal_scaleY = ini.GetFloat("font", "normal_scaleY", 1.0f);
+short text_font = (short)ini.GetInteger("font", "text", 1);
+short title_font = (short)ini.GetInteger("font", "title", 1);
 
-float box_scaleY = ini.GetFloat("highlight", "box_scaleY", 1.0f);
+CVector2D text_scale_mul{ ini.GetFloat("font", "text_scaleX", 1.0f) , ini.GetFloat("font", "text_scaleX", 1.0f) };
+CVector2D title_scale_mul{ ini.GetFloat("font", "title_scaleX", 1.0f) , ini.GetFloat("font", "title_scaleX", 1.0f) };
 
-uchar accent_color_red = (uchar)ini.GetInteger("color", "accent_color_red", 0);
-uchar accent_color_green = (uchar)ini.GetInteger("color", "accent_color_green", 0);
-uchar accent_color_blue = (uchar)ini.GetInteger("color", "accent_color_blue", 0);
+CRGBA window_bg_color =
+{
+    (uchar)ini.GetInteger("color", "window_bg_red", 0),
+    (uchar)ini.GetInteger("color", "window_bg_green", 0),
+    (uchar)ini.GetInteger("color", "window_bg_blue", 0),
+    WINDOW_ALPHA
+};
 
-uchar normal_text_red = (uchar)ini.GetInteger("color", "normal_text_red", 0);
-uchar normal_text_green = (uchar)ini.GetInteger("color", "normal_text_green", 0);
-uchar normal_text_blue = (uchar)ini.GetInteger("color", "normal_text_blue", 0);
+CRGBA title_bg_color =
+{
+    (uchar)ini.GetInteger("color", "window_bg_red", 0),
+    (uchar)ini.GetInteger("color", "window_bg_green", 0),
+    (uchar)ini.GetInteger("color", "window_bg_blue", 0),
+    TITLE_ALPHA
+};
 
-uchar title_text_red = (uchar)ini.GetInteger("color", "title_text_red", 0);
-uchar title_text_green = (uchar)ini.GetInteger("color", "title_text_green", 0);
-uchar title_text_blue = (uchar)ini.GetInteger("color", "title_text_blue", 0);
+CRGBA text_color =
+{
+    (uchar)ini.GetInteger("color", "text_red", 0),
+    (uchar)ini.GetInteger("color", "text_green", 0),
+    (uchar)ini.GetInteger("color", "text_blue", 0),
+    WINDOW_ALPHA
+};
 
-uchar title_box_red = (uchar)ini.GetInteger("color", "title_box_red", 0);
-uchar title_box_green = (uchar)ini.GetInteger("color", "title_box_green", 0);
-uchar title_box_blue = (uchar)ini.GetInteger("color", "title_box_blue", 0);
+CRGBA title_color =
+{
+    (uchar)ini.GetInteger("color", "title_red", 0),
+    (uchar)ini.GetInteger("color", "title_green", 0),
+    (uchar)ini.GetInteger("color", "title_blue", 0),
+    TITLE_ALPHA
+};
 
-uchar highlight_text_red = (uchar)ini.GetInteger("color", "highlight_text_red", 0);
-uchar highlight_text_green = (uchar)ini.GetInteger("color", "highlight_text_green", 0);
-uchar highlight_text_blue = (uchar)ini.GetInteger("color", "highlight_text_blue", 0);
+CRGBA select_text_color =
+{
+    (uchar)ini.GetInteger("color", "select_text_red", 0),
+    (uchar)ini.GetInteger("color", "select_text_green", 0),
+    (uchar)ini.GetInteger("color", "select_text_blue", 0),
+    WINDOW_ALPHA
+};
 
-uchar highlight_box_red = (uchar)ini.GetInteger("color", "highlight_box_red", 0);
-uchar highlight_box_green = (uchar)ini.GetInteger("color", "highlight_box_green", 0);
-uchar highlight_box_blue = (uchar)ini.GetInteger("color", "highlight_box_blue", 0);
+CRGBA select_text_bg_color =
+{
+    (uchar)ini.GetInteger("color", "select_text_bg_red", 0),
+    (uchar)ini.GetInteger("color", "select_text_bg_green", 0),
+    (uchar)ini.GetInteger("color", "select_text_bg_blue", 0),
+    WINDOW_ALPHA
+};
 
 class MenuSystemUI {
 public:
@@ -90,7 +112,7 @@ void WrapXCenteredPrint(char* pText, float window_width, float text_posX, float 
             CFont::PrintString(text_posX, text_posY, (char*)buf.c_str());
             CRect rect;
             CFont::GetTextRect(&rect, text_posX, text_posY, (char*)buf.c_str());
-            text_posY -= (rect.bottom-rect.top) / 1.3f;
+            text_posY -= (rect.bottom-rect.top) / 1.5f;
             buf = word;
         }
 
@@ -102,42 +124,40 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
     CRect window_size;
     float header_padding = 0;
     tMenuPanel* hMenu = MenuNumber[panelId];
-    size_t column_count = hMenu->m_nNumColumns;
     float tcolumn_width = 0.0f;
     float window_width = 999.0f;
-    size_t row_count = hMenu->m_nNumRows;
-    float font_scaleX = RsGlobal.maximumWidth * 0.00055f * normal_scaleX;
-    float font_scaleY = RsGlobal.maximumHeight * 0.0015f * normal_scaleY;
-    float hbox_height = (RsGlobal.maximumHeight * 0.035712f - 3.0f) * box_scaleY;
+    float hbox_height = RsGlobal.maximumHeight * 0.035712f - 3.0f;
     float hbox_left = RsGlobal.maximumWidth * 0.015625f + hMenu->m_vPosn.x;
     bool draw_headers = false;
 
+    CVector2D font_scale = { RsGlobal.maximumWidth * 0.00045f , RsGlobal.maximumHeight * 0.0015f };
+    CVector2D text_scale = { font_scale.x * text_scale_mul.x,font_scale.y * text_scale_mul.y };
+    CVector2D title_scale = { font_scale.x * title_scale_mul.x,font_scale.y * title_scale_mul.y };
+
     // default font stuff
-    CFont::SetFontStyle(font_type);
-    CFont::SetColor(CRGBA(title_text_red, title_text_green, title_text_blue, 255));
+    CFont::SetFontStyle(text_font);
+    CFont::SetColor(title_color);
     CFont::SetOrientation(eFontAlignment::ALIGN_LEFT);
-    CFont::SetScale(font_scaleX, font_scaleY);
     CFont::SetDropColor(CRGBA(0, 0, 0, 0));
 
     // check if headers contain text
-    for (size_t column = 0; column < column_count; ++column)
+    for (char column = 0; column < hMenu->m_nNumColumns; ++column)
     {
         char* pText = TheText.Get(hMenu->m_aacColumnHeaders[column]);
         if (pText[0] != ' ' && pText[0] != '\0')
-        {
             draw_headers = true;
-        }
+
         tcolumn_width += hMenu->m_afColumnWidth[column];
     }
 
-    // Draw menu background
+    // Draw background
     if (hMenu->m_bColumnBackground)
     {
-        size_t row_draw_count = row_count;
+        size_t row_draw_count = hMenu->m_nNumRows;
         // header
         header_padding = 75;
         window_size.left = hMenu->m_vPosn.x;
-        window_size.right = RsGlobal.maximumWidth / 3.75f + window_size.left;
+        window_size.right = RsGlobal.maximumWidth / 3.5f + window_size.left;
 
         float original_right = RsGlobal.maximumWidth * 0.03124f + hMenu->m_vPosn.x;
         float offset = (original_right - window_size.right) / 4;
@@ -151,11 +171,11 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
         if (draw_headers)
         {
             window_size.bottom += hbox_height;
-            ++row_draw_count;
+            row_draw_count += 1;
         }
 
         // window
-        FrontEndMenuManager.DrawWindow(window_size, "", 0, CRGBA(title_box_red, title_box_green, title_box_blue, 250), 0, 1);
+        FrontEndMenuManager.DrawWindow(window_size, "", 0, title_bg_color, 0, 1);
 
         char* pText = TheText.Get(hMenu->m_acTitle);
         float text_posX = window_size.left + (window_size.right - window_size.left) / 2;
@@ -163,113 +183,90 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
         window_width = window_size.right - window_size.left;
 
         CFont::SetOrientation(eFontAlignment::ALIGN_CENTER);
-        CFont::SetFontStyle(title_font_type);
-        CFont::SetScale(font_scaleX * title_mulX, font_scaleY * title_mulY);
+        CFont::SetFontStyle(title_font);
+        CFont::SetScale(title_scale.x, title_scale.y);
         WrapXCenteredPrint(pText, window_width, text_posX, text_posY);
-        CFont::SetScale(font_scaleX, font_scaleY);
-        CFont::SetFontStyle(font_type);
+        CFont::SetFontStyle(text_font);
         CFont::SetOrientation(eFontAlignment::ALIGN_LEFT);
         
         window_size.top += header_padding;
         window_size.bottom = window_size.top + (row_draw_count * hbox_height);
-        FrontEndMenuManager.DrawWindow(window_size, "", 0, CRGBA(accent_color_red, accent_color_green, accent_color_blue, MENU_ALPHA), 0, 1);
+        FrontEndMenuManager.DrawWindow(window_size, "", 0, window_bg_color, 0, 1);
+
+        // select box
+        float select_top = hMenu->m_vPosn.y + header_padding + hbox_height * hMenu->m_nSelectedRow;
+        CRect pos;
+        pos.left = window_size.left;
+        pos.right = window_size.right;
+        pos.top = select_top + hbox_height;
+        pos.bottom = select_top;
+
+        if (draw_headers)
+        {
+            pos.top += hbox_height;
+            pos.bottom += hbox_height;
+        }
+        FrontEndMenuManager.DrawWindow(pos, "", 0, select_text_bg_color, 0, 1);
 
         // footer
         window_size.top = window_size.bottom;
         window_size.bottom += hbox_height;
-        FrontEndMenuManager.DrawWindow(window_size, "", 0, CRGBA(title_box_red, title_box_green, title_box_blue, 250), 0, 1);
+        FrontEndMenuManager.DrawWindow(window_size, "", 0, title_bg_color, 0, 1);
     }
 
-    float hbox_top =  hMenu->m_vPosn.y + header_padding;
-
-    // Draw Headers
-    if (draw_headers)
+    // draw text
+    for (char column = 0; column < hMenu->m_nNumColumns; ++column)
     {
-        float text_top = hbox_top;
-        for (size_t column = 0; column < column_count; ++column)
+        char* pHeader = TheText.Get(hMenu->m_aacColumnHeaders[column]);
+        CVector2D text_pos
         {
-            char* pText = TheText.Get(hMenu->m_aacColumnHeaders[column]);
-            float width_offset = column == 0 ? 0 : hMenu->m_afColumnWidth[column - 1] + 50.0f;
-            float scaleX = font_scaleX;
-            float font_width = CFont::GetStringWidth(pText, true, false);
+            hbox_left + (column == 0 ? 0 : hMenu->m_afColumnWidth[column - 1]),
+            hMenu->m_vPosn.y + header_padding
+        };
+        float scaleX = text_scale.x;
+        float font_width = CFont::GetStringWidth(pHeader, true, false);
+        float text_area_width = window_width - 25.0f;
+        if (font_width > text_area_width)
+            scaleX = scaleX - 1 + text_area_width / font_width;
 
-            if (font_width > window_width)
-                scaleX = font_scaleX - 1 + window_width / font_width;
+        CFont::SetColor(title_color);
+        CFont::SetScale(scaleX, text_scale.y);
+        CFont::PrintString(text_pos.x, text_pos.y, pHeader);
 
-            CFont::SetScale(scaleX, font_scaleY);
-            CFont::PrintString(hbox_left + width_offset, text_top, pText);
-            CFont::SetScale(font_scaleX, font_scaleY);
-            hbox_top += hbox_height;
-        }
-        hbox_top -= hbox_height; // fix
-    }
+        if (draw_headers)
+            text_pos.y += hbox_height;
 
-    // Draw row & columns
-    for (size_t row = 0; row < row_count; ++row)
-    {
-        // setup row text
-        char pText[400];
-
-        for (size_t column = 0; column < column_count; ++column)
+        for (char row = 0; row < hMenu->m_nNumRows; ++row)
         {
-            char* row_gxt = hMenu->m_aaacRowTitles[column][row];
+            char pText[400];
+            int num = hMenu->m_aadwNumberInRowTitle[column][row];
+            int num2 = hMenu->m_aadw2ndNumberInRowTitle[column][row];
+            char* row_text = TheText.Get(hMenu->m_aaacRowTitles[column][row]);
+            CMessages::InsertNumberInString(row_text, num, num2, -1, -1, -1, -1, pText);
+            CMessages::InsertPlayerControlKeysInString(pText);
+            scaleX = text_scale.x;
+            font_width = CFont::GetStringWidth(pText, true, false);
 
-            if (row_gxt)
+            if (font_width > text_area_width)
+                scaleX = scaleX - 1 + text_area_width / font_width;
+
+            CRGBA color = text_color;
+
+            if (hMenu->m_abRowSelectable[row])
             {
-                int num = hMenu->m_aadwNumberInRowTitle[column][row];
-                int num2 = hMenu->m_aadw2ndNumberInRowTitle[column][row];
-                char* row_title = TheText.Get(row_gxt);
-                CMessages::InsertNumberInString(row_title, num, num2, -1, -1, -1, -1, pText);
-                CMessages::InsertPlayerControlKeysInString(pText);
-                bool high_light = false;
-                CRGBA high_light_color = { highlight_box_red, highlight_box_green, highlight_box_blue, MENU_ALPHA };
-                CRGBA color = { normal_text_red, normal_text_green, normal_text_blue, MENU_ALPHA };
+                if (row == hMenu->m_nSelectedRow)
+                    color = select_text_color;
 
-                if (hMenu->m_abRowSelectable[row])
-                {
-                    if (row == hMenu->m_nSelectedRow)
-                    {
-                        high_light = true;
-                        color = { highlight_text_red, highlight_text_green, highlight_text_blue, MENU_ALPHA };
-                    }
-
-                    if (hMenu->m_abRowAlreadyBought[row])
-                    {
-                        color = { 128, 128, 128, MENU_ALPHA };
-                    }
-                }
-                else
-                    color = { 128, 128, 128, MENU_ALPHA };
-
-                CFont::SetColor(color);
-                float width_offset = column == 0 ? 0 : hMenu->m_afColumnWidth[column - 1] + 50.0f;
-
-                if (high_light)
-                {
-                    CRect size;
-                    CFont::GetTextRect(&size, hbox_left + width_offset, hbox_top, pText);
-
-                    float text_height = size.bottom - size.top + 5.0f;
-                    CRect pos;
-                    pos.left = window_size.left;
-                    pos.right = window_size.right;
-                    pos.top = hbox_top + hbox_height;
-                    pos.bottom = hbox_top;
-                    FrontEndMenuManager.DrawWindow(pos, "", 0, high_light_color, 0, 1);
-                }
-                float scaleX = font_scaleX;
-                float font_width = CFont::GetStringWidth(pText, true, false);
-
-                if (font_width > window_width)
-                {
-                    scaleX = font_scaleX - 1 + window_width / font_width;
-                }
-                
-                CFont::SetScale(scaleX, font_scaleY);
-                CFont::PrintString(hbox_left + width_offset, hbox_top, pText);
-                CFont::SetScale(font_scaleX, font_scaleY);
+                if (hMenu->m_abRowAlreadyBought[row])
+                    color = { 128, 128, 128, WINDOW_ALPHA };
             }
+            else
+                color = { 128, 128, 128, WINDOW_ALPHA };
+
+            CFont::SetColor(color);
+            CFont::SetScale(scaleX, text_scale.y);
+            CFont::PrintString(text_pos.x, text_pos.y, pText);   
+            text_pos.y += hbox_height;
         }
-        hbox_top += hbox_height;
     }
 }
