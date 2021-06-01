@@ -4,8 +4,8 @@
 */
 
 #include "plugin.h"
-#include "CMenuManager.h"
 #include "CMenuSystem.h"
+#include "CSprite2d.h"
 #include "CMessages.h"
 #include "CText.h"
 #include "INIReader.h"
@@ -175,7 +175,7 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
         }
 
         // window
-        FrontEndMenuManager.DrawWindow(window_size, "", 0, title_bg_color, 0, 1);
+        CSprite2d::DrawRect(window_size, title_bg_color);
 
         char* pText = TheText.Get(hMenu->m_acTitle);
         float text_posX = window_size.left + (window_size.right - window_size.left) / 2;
@@ -191,7 +191,7 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
         
         window_size.top += header_padding;
         window_size.bottom = window_size.top + (row_draw_count * hbox_height);
-        FrontEndMenuManager.DrawWindow(window_size, "", 0, window_bg_color, 0, 1);
+        CSprite2d::DrawRect(window_size, window_bg_color);
 
         // select box
         float select_top = hMenu->m_vPosn.y + header_padding + hbox_height * hMenu->m_nSelectedRow;
@@ -206,12 +206,12 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
             pos.top += hbox_height;
             pos.bottom += hbox_height;
         }
-        FrontEndMenuManager.DrawWindow(pos, "", 0, select_text_bg_color, 0, 1);
+        CSprite2d::DrawRect(pos, select_text_bg_color);
 
         // footer
         window_size.top = window_size.bottom;
         window_size.bottom += hbox_height;
-        FrontEndMenuManager.DrawWindow(window_size, "", 0, title_bg_color, 0, 1);
+        CSprite2d::DrawRect(window_size, title_bg_color);
     }
 
     // draw text
