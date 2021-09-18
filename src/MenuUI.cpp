@@ -74,6 +74,14 @@ CRGBA select_text_bg_color =
     WINDOW_ALPHA
 };
 
+enum MENU_STYLE 
+{
+    NORMAL_STYLE,
+    MOBILE_STYLE,
+};
+
+MENU_STYLE menu_style = (MENU_STYLE)ini.GetInteger("main", "menu_style", MOBILE_STYLE);
+
 class MenuUi {
 public:
     MenuUi() {
@@ -127,7 +135,8 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
     float tcolumn_width = 0.0f;
     float window_width = 999.0f;
     float hbox_height = RsGlobal.maximumHeight * 0.035712f - 3.0f;
-    float hbox_left = RsGlobal.maximumWidth * 0.015625f + hMenu->m_vPosn.x;
+    CVector2D menu_pos = {RsGlobal.maximumWidth * 0.015625f, 0};  
+
     bool draw_headers = false;
 
     CVector2D font_scale = { RsGlobal.maximumWidth * 0.00045f , RsGlobal.maximumHeight * 0.0015f };
@@ -145,27 +154,45 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
     {
         char* pText = TheText.Get(hMenu->m_aacColumnHeaders[column]);
         if (pText[0] != ' ' && pText[0] != '\0')
+        {
             draw_headers = true;
+        }
 
         tcolumn_width += hMenu->m_afColumnWidth[column];
     }
-
+    
     // Draw background
     if (hMenu->m_bColumnBackground)
     {
         size_t row_draw_count = hMenu->m_nNumRows;
         // header
         header_padding = 75;
-        window_size.left = hMenu->m_vPosn.x;
-        window_size.right = RsGlobal.maximumWidth / 3.5f + window_size.left;
+        
+        if (menu_style == MOBILE_STYLE)
+        {
+            window_size.left = 0.0f;
+            window_size.top = 0.0f;
+            menu_pos.y = 0.0f;
+            hbox_height *= 1.5f;
+            window_size.right = RsGlobal.maximumWidth / 3.75f + window_size.left;
+        }
+        else
+        {
+            window_size.left = hMenu->m_vPosn.x;
+            menu_pos.x += window_size.left;
+            window_size.top = hMenu->m_vPosn.y;
+            menu_pos.y = window_size.top;
+            window_size.right = RsGlobal.maximumWidth / 3.5f + window_size.left;
+        }
+        
 
+        // WTF is happening here?
         float original_right = RsGlobal.maximumWidth * 0.03124f + hMenu->m_vPosn.x;
         float offset = (original_right - window_size.right) / 4;
-        hbox_left -= offset;
+        menu_pos.x -= offset;
         window_size.left -= offset;
         window_size.right -= offset;
 
-        window_size.top = hMenu->m_vPosn.y;
         window_size.bottom = window_size.top + header_padding;
         
         if (draw_headers)
@@ -190,11 +217,20 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
         CFont::SetOrientation(eFontAlignment::ALIGN_LEFT);
         
         window_size.top += header_padding;
-        window_size.bottom = window_size.top + (row_draw_count * hbox_height);
+
+        if (menu_style == MOBILE_STYLE)
+        {
+            window_size.bottom = screen::GetScreenHeight() - hbox_height;
+        }
+        else
+        {
+            window_size.bottom = window_size.top + (row_draw_count * hbox_height);
+        }
+        
         CSprite2d::DrawRect(window_size, window_bg_color);
 
         // select box
-        float select_top = hMenu->m_vPosn.y + header_padding + hbox_height * hMenu->m_nSelectedRow;
+        float select_top = menu_pos.y + header_padding + hbox_height * hMenu->m_nSelectedRow;
         CRect pos;
         pos.left = window_size.left;
         pos.right = window_size.right;
@@ -220,21 +256,31 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
         char* pHeader = TheText.Get(hMenu->m_aacColumnHeaders[column]);
         CVector2D text_pos
         {
-            hbox_left + (column == 0 ? 0 : hMenu->m_afColumnWidth[column - 1]),
-            hMenu->m_vPosn.y + header_padding
+            menu_pos.x + (column == 0 ? 0 : hMenu->m_afColumnWidth[column - 1]),
+            menu_pos.y + header_padding
         };
         float scaleX = text_scale.x;
         float font_width = CFont::GetStringWidth(pHeader, true, false);
         float text_area_width = window_width - 25.0f;
         if (font_width > text_area_width)
+        {
             scaleX = scaleX - 1 + text_area_width / font_width;
+        }
 
         CFont::SetColor(title_color);
         CFont::SetScale(scaleX, text_scale.y);
         CFont::PrintString(text_pos.x, text_pos.y, pHeader);
 
         if (draw_headers)
+        {
             text_pos.y += hbox_height;
+        }
+
+        if (menu_style == MOBILE_STYLE)
+        {
+            text_pos.x += 10.0f;
+            text_pos.y += 5.0f;
+        }
 
         for (char row = 0; row < hMenu->m_nNumRows; ++row)
         {
@@ -248,20 +294,28 @@ void __cdecl DisplayStandardMenu(unsigned __int8 panelId, bool bBrightFont)
             font_width = CFont::GetStringWidth(pText, true, false);
 
             if (font_width > text_area_width)
+            {
                 scaleX = scaleX - 1 + text_area_width / font_width;
+            }
 
             CRGBA color = text_color;
 
             if (hMenu->m_abRowSelectable[row])
             {
                 if (row == hMenu->m_nSelectedRow)
+                {
                     color = select_text_color;
+                }
 
                 if (hMenu->m_abRowAlreadyBought[row])
+                {
                     color = { 128, 128, 128, WINDOW_ALPHA };
+                }
             }
             else
+            {
                 color = { 128, 128, 128, WINDOW_ALPHA };
+            }
 
             CFont::SetColor(color);
             CFont::SetScale(scaleX, text_scale.y);
