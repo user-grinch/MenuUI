@@ -7,12 +7,37 @@
 #include <CSprite2d.h>
 #include <CMessages.h>
 #include <CText.h>
+#include <filesystem>
+#include <fstream>
+#include <CHud.h>
+
+RwTexture* LoadPNGTexture(std::string &&path) 
+{
+	if (std::filesystem::exists(path)) 
+    {
+	    int w, h, d, f;
+		RwImage* data = RtPNGImageRead(path.c_str());
+		RwImageFindRasterFormat(data, rwRASTERTYPETEXTURE, &w, &h, &d, &f);
+
+		RwRaster* raster = RwRasterCreate(w, h, d, f);
+		RwRasterSetFromImage(raster, data);
+		RwImageDestroy(data);
+		return RwTextureCreate(raster);
+	}
+
+	return NULL;
+}
 
 void MenuUi::InjectPatches()
 {
     Events::initGameEvent += []
     {
         ReadConfig();
+        ReadHeaderInfo();
+
+        menuBoughtSprite.m_pTexture = LoadPNGTexture(PLUGIN_PATH((char*)"MenuUi/menu_bought.png"));
+        menuSelectorSprite.m_pTexture = LoadPNGTexture(PLUGIN_PATH((char*)"MenuUi/menu_selector.png"));
+
         patch::ReplaceFunction(0x580E00, DisplayStandardMenu);
     };
 }
@@ -35,6 +60,37 @@ void MenuUi::ReadConfig()
     textStyle = config["TEXT_STYLE"].asInt(1);
     titleStyle = config["TITLE_STYLE"].asInt(1);
     menuStyle = config["MENU_STYLE"].asInt(0);
+}
+
+void MenuUi::ReadHeaderInfo()
+{
+    std::string root = PLUGIN_PATH((char*)"MenuUi/headers/");
+    std::string path = root  + "headers.dat";
+
+    if (std::filesystem::exists(path)) 
+    {
+        std::ifstream file(path);
+        std::string line;
+
+        while (getline(file, line))
+        {
+            if (line[0] == '#')
+            {
+                continue;
+            }
+
+            char gxtName[64], logoPath[64], patternPath[64];
+            if (sscanf(line.c_str(), "%s %s %s", gxtName, logoPath, patternPath) == 3)
+            {
+                CSprite2d *pLogo = new CSprite2d();
+                CSprite2d *pPattern = new CSprite2d();
+                pLogo->m_pTexture = LoadPNGTexture(root + logoPath);
+                pPattern->m_pTexture = LoadPNGTexture(root + patternPath);
+
+                vecHeaders.push_back({gxtName, pLogo, pPattern});
+            }
+        }
+    }
 }
 
 /* 
@@ -99,12 +155,32 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
     CFont::SetOrientation(eFontAlignment::ALIGN_LEFT);
     CFont::SetDropColor(CRGBA(0, 0, 0, 0));
 
+    // hide the help message since it covers the menu top
+    if (menuStyle == MOBILE_STYLE)
+    {
+        CHud::m_bHelpMessagePermanent = false;
+    }
+
     // ---------------------------------------------------
     // Draw background
     if (pMenuPanel->m_bColumnBackground)
     {
         // ---------------------------------------------------
         // Draw title section
+
+        // Search for header sprites
+        CSprite2d *pLogo = nullptr, *pPattern = nullptr;
+
+        for (auto &data : vecHeaders)
+        {
+            if (data.gxtName == pMenuPanel->m_acTitle)
+            {
+                pLogo = data.m_pLogo;
+                pPattern = data.m_pPattern;
+                break; 
+            }
+        }
+
         CRect headerRect;
         if (menuStyle == MOBILE_STYLE)
         {
@@ -122,15 +198,49 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
         }
         headerRect.bottom = headerRect.top + HEADER_PADDING + hBoxHeight;
 
-        CSprite2d::DrawRect(headerRect, titleBgColor);
+        // draw title sprites if available or go with text
+        if (pPattern && pPattern->m_pTexture)
+        {
+            pPattern->Draw(headerRect, CRGBA(255, 255, 255, 255));
+        }
+        else
+        {
+            CSprite2d::DrawRect(headerRect, titleBgColor);
+        }
 
-        // title text
-        CFont::SetOrientation(eFontAlignment::ALIGN_CENTER);
-        CFont::SetFontStyle(titleStyle);
-        CFont::SetScale(titleScale.x, titleScale.y);
-        WrapXCenteredPrint(pMenuPanel->m_acTitle, headerRect);
-        CFont::SetFontStyle(textStyle);
-        CFont::SetOrientation(eFontAlignment::ALIGN_LEFT);
+        if (pLogo && pLogo->m_pTexture)
+        {
+            CRect logoRect = headerRect;
+            bool headers = false;
+
+            // check if the panel got header text
+            for (char column = 0; column < pMenuPanel->m_nNumColumns; ++column)
+            {
+                char* pText = TheText.Get(pMenuPanel->m_aacColumnHeaders[column]);
+
+                if (pText[0] != ' ' && pText[0] != '\0')
+                {
+                    headers = true;
+                    break;
+                }
+            }
+
+            if (headers)
+            {
+                logoRect.bottom -= hBoxHeight;
+            }
+
+            pLogo->Draw(logoRect, CRGBA(255, 255, 255, 255));
+        }
+        else
+        {
+            CFont::SetOrientation(eFontAlignment::ALIGN_CENTER);
+            CFont::SetFontStyle(titleStyle);
+            CFont::SetScale(titleScale.x, titleScale.y);
+            WrapXCenteredPrint(pMenuPanel->m_acTitle, headerRect);
+            CFont::SetFontStyle(textStyle);
+            CFont::SetOrientation(eFontAlignment::ALIGN_LEFT);
+        }
         
         // ---------------------------------------------------
         // Draw text section
@@ -159,6 +269,10 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
         footerRect.left = textRect.left;
         footerRect.right = textRect.right;
         CSprite2d::DrawRect(footerRect, titleBgColor);
+
+        // Draw selection sprite
+        float posX = footerRect.left + (footerRect.right - footerRect.left - hBoxHeight)/2;
+        menuSelectorSprite.Draw(posX, footerRect.top, hBoxHeight, hBoxHeight, textColor);
 
         // ---------------------------------------------------
         // Draw selection box
@@ -228,14 +342,28 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
                 {
                     color = selectTextColor;
                 }
-
-                if (pMenuPanel->m_abRowAlreadyBought[row])
-                {
-                    color = grayTextColor;
-                }
             }
             else
             {
+                // Draw checkmark
+                if (column == pMenuPanel->m_nNumColumns-1)
+                {
+                    float posX = textPos.x + fontWidth;
+                    float posY = textPos.y;
+
+                    if (menuStyle == MOBILE_STYLE)
+                    {
+                        posX += SCREEN_MULTIPLIER(15.0f);
+                        posY -= SCREEN_MULTIPLIER(15.0f);
+                    }
+                    else
+                    {
+                        posX += SCREEN_MULTIPLIER(50.0f);
+                        posY -= SCREEN_MULTIPLIER(2.5f);
+                    }
+
+                    menuBoughtSprite.Draw(posX, posY, hBoxHeight, hBoxHeight, grayTextColor);
+                }
                 color = grayTextColor;
             }
 
