@@ -7,78 +7,34 @@
 #include <CSprite2d.h>
 #include <CMessages.h>
 #include <CText.h>
-#include "INIReader.h"
-
-
-// ---------------------------------------------------
-// Fetching values from ini file
-// ---------------------------------------------------
-INIReader ini(PLUGIN_PATH((char*)"MenuUI.ini"));
-
-short textStyle = (short)ini.GetInteger("font", "text", 1);
-short titleStyle = (short)ini.GetInteger("font", "title", 1);
-
-CVector2D textScaleMul{ ini.GetFloat("font", "text_scaleX", 1.0f) , ini.GetFloat("font", "text_scaleX", 1.0f) };
-CVector2D titleScaleMul{ ini.GetFloat("font", "title_scaleX", 1.0f) , ini.GetFloat("font", "title_scaleX", 1.0f) };
-
-CRGBA windowBgColor =
-{
-    (uchar)ini.GetInteger("color", "window_bg_red", 0),
-    (uchar)ini.GetInteger("color", "window_bg_green", 0),
-    (uchar)ini.GetInteger("color", "window_bg_blue", 0),
-    WINDOW_ALPHA
-};
-
-CRGBA titleBgColor =
-{
-    (uchar)ini.GetInteger("color", "window_bg_red", 0),
-    (uchar)ini.GetInteger("color", "window_bg_green", 0),
-    (uchar)ini.GetInteger("color", "window_bg_blue", 0),
-    TITLE_ALPHA
-};
-
-CRGBA textColor =
-{
-    (uchar)ini.GetInteger("color", "text_red", 0),
-    (uchar)ini.GetInteger("color", "text_green", 0),
-    (uchar)ini.GetInteger("color", "text_blue", 0),
-    255
-};
-
-CRGBA titleColor =
-{
-    (uchar)ini.GetInteger("color", "title_red", 0),
-    (uchar)ini.GetInteger("color", "title_green", 0),
-    (uchar)ini.GetInteger("color", "title_blue", 0),
-    255
-};
-
-CRGBA selectTextColor =
-{
-    (uchar)ini.GetInteger("color", "select_text_red", 0),
-    (uchar)ini.GetInteger("color", "select_text_green", 0),
-    (uchar)ini.GetInteger("color", "select_text_blue", 0),
-    255
-};
-
-CRGBA selectTextBgColor =
-{
-    (uchar)ini.GetInteger("color", "select_text_bg_red", 0),
-    (uchar)ini.GetInteger("color", "select_text_bg_green", 0),
-    (uchar)ini.GetInteger("color", "select_text_bg_blue", 0),
-    255
-};
-
-MENU_STYLE menuStyle = (MENU_STYLE)ini.GetInteger("main", "menu_style", MOBILE_STYLE);
-// ---------------------------------------------------
-
 
 void MenuUi::InjectPatches()
 {
     Events::initGameEvent += []
     {
+        ReadConfig();
         patch::ReplaceFunction(0x580E00, DisplayStandardMenu);
     };
+}
+
+void MenuUi::ReadConfig()
+{
+    config_file config(PLUGIN_PATH((char*)"MenuUi/config.dat"));
+
+    windowBgColor = config["WINDOW_BG"].asRGBA({0, 0, 0, 200});
+    titleBgColor = config["TITLE_BG"].asRGBA({255, 255, 255, 200});
+    textColor  = config["TEXT_COLOR"].asRGBA({255, 255, 255, 255});
+    titleColor = config["TITLE_COLOR"].asRGBA({255, 255, 255, 255});
+    selectTextColor = config["SELECT_TEXT"].asRGBA({0, 0, 0, 255});
+    selectTextBgColor = config["SELECT_BG"].asRGBA({0, 0, 0, 255});
+    grayTextColor  = config["GRAY_TEXT_COLOR"].asRGBA({128, 128, 128, 255});
+
+    textScaleMul = config["TEXT_SCALE"].asVec2d({1.0f, 1.0f});
+    titleScaleMul = config["TITLE_SCALE"].asVec2d({1.25f, 1.25f});
+
+    textStyle = config["TEXT_STYLE"].asInt(1);
+    titleStyle = config["TITLE_STYLE"].asInt(1);
+    menuStyle = config["MENU_STYLE"].asInt(0);
 }
 
 /* 
@@ -152,6 +108,8 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
         CRect headerRect;
         if (menuStyle == MOBILE_STYLE)
         {
+            headerRect.top = 0.0f;
+            headerRect.left = 0.0f;
             headerRect.right = RsGlobal.maximumWidth / 3.75f;
         }
         else
@@ -225,6 +183,13 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
             menuPos.y + HEADER_PADDING
         };
         
+        // adding extra padding for mobile
+        if (menuStyle == MOBILE_STYLE)
+        {
+            textPos.x += 10.0f;
+            textPos.y += 5.0f;
+        }
+
         float scaleX = textScale.x;
         float fontWidth = CFont::GetStringWidth(pHeader, true, false);
         if (fontWidth > menuWidth)
@@ -239,13 +204,6 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
         // ---------------------------------------------------
         // Draw texts
         textPos.y += hBoxHeight;
-
-        // adding extra padding for mobile
-        if (menuStyle == MOBILE_STYLE)
-        {
-            textPos.x += 10.0f;
-            textPos.y += 5.0f;
-        }
 
         for (char row = 0; row < pMenuPanel->m_nNumRows; ++row)
         {
@@ -273,12 +231,12 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
 
                 if (pMenuPanel->m_abRowAlreadyBought[row])
                 {
-                    color = { 128, 128, 128, 255 };
+                    color = grayTextColor;
                 }
             }
             else
             {
-                color = { 128, 128, 128, 255 };
+                color = grayTextColor;
             }
 
             CFont::SetColor(color);

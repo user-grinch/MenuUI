@@ -1,0 +1,25 @@
+######################################################
+# MenuUi v1.5 
+# Author: Grinch_
+# Source code: https://github.com/user-grinch/MenuUI
+######################################################
+# Colors (RGBA)
+######################################################
+
+SELECT_BG       255 255 255 255 
+SELECT_TEXT     0   0   0   255 
+TEXT_COLOR      255 255 255 255 
+TITLE_BG        0   0   0   240
+TITLE_COLOR     255 255 255 255  
+WINDOW_BG       0   0   0   200
+
+######################################################
+# Styles
+######################################################
+
+MENU_STYLE      0               # 0 = PC        1 = Mobile
+TEXT_STYLE      1               # 0 = GOTHIC    1 = SUBTITLES   2 = MENU   3 = PRICEDOWN
+TITLE_STYLE     1               # 0 = GOTHIC    1 = SUBTITLES   2 = MENU   3 = PRICEDOWN
+
+TEXT_SCALE      1.0     1.0
+TITLE_SCALE     1.25    1.25
