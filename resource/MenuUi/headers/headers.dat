@@ -4,12 +4,13 @@
 # Format: GXT_NAME LOGO_PATH PATTERN_PATH
 ############################################################
 
-AMMUN       ammu-nation.png   ammu-nation_pattern.png
-AMMUN1      ammu-nation.png   ammu-nation_pattern.png
-AMMUN2      ammu-nation.png   ammu-nation_pattern.png
-AMMUN3      ammu-nation.png   ammu-nation_pattern.png
-AMMUN4      ammu-nation.png   ammu-nation_pattern.png
-AMMUN5      ammu-nation.png   ammu-nation_pattern.png
-CHT11       cheat-menu.png   cheat-menu_pattern.png
-CLOTCHO     binco.png         binco_pattern.png
-CSPAWN      car_spawner.png   car_spawner_pattern.png
+AMMUN       ammu-nation.png     ammu-nation_pattern.png
+AMMUN1      ammu-nation.png     ammu-nation_pattern.png
+AMMUN2      ammu-nation.png     ammu-nation_pattern.png
+AMMUN3      ammu-nation.png     ammu-nation_pattern.png
+AMMUN4      ammu-nation.png     ammu-nation_pattern.png
+AMMUN5      ammu-nation.png     ammu-nation_pattern.png
+FOODCHO     pizza.png   	pizza_pattern.png
+HAIRCHO     barber.png   	barber_pattern.png
+CLOTCHO     binco.png           binco_pattern.png
+CSPAWN      car_spawner.png     car_spawner_pattern.png
