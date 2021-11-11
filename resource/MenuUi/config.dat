@@ -1,5 +1,5 @@
 ######################################################
-# MenuUi v1.5 
+# MenuUi v1.6 
 # Author: Grinch_
 # Source code: https://github.com/user-grinch/MenuUI
 ######################################################
@@ -13,12 +13,13 @@ TEXT_COLOR      255 255 255 255
 TITLE_BG        0   0   0   250
 TITLE_COLOR     255 255 255 255
 WINDOW_BG       0   0   0   200
+COLUMN2_COL     255 255 255 255  # aka the money text
 
 ######################################################
 # Styles
 ######################################################
 
-MENU_STYLE      0               # 0 = PC        1 = Mobile
+MENU_STYLE      0               # 0 = PC        1 = Mobile	    2 = Definitive Edition
 TEXT_STYLE      1               # 0 = GOTHIC    1 = SUBTITLES   2 = MENU   3 = PRICEDOWN
 TITLE_STYLE     1               # 0 = GOTHIC    1 = SUBTITLES   2 = MENU   3 = PRICEDOWN
 

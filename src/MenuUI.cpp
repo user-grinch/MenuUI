@@ -53,6 +53,7 @@ void MenuUi::ReadConfig()
     selectTextColor = config["SELECT_TEXT"].asRGBA({0, 0, 0, 255});
     selectTextBgColor = config["SELECT_BG"].asRGBA({0, 0, 0, 255});
     grayTextColor  = config["GRAY_TEXT_COLOR"].asRGBA({128, 128, 128, 255});
+    column2color  = config["COLUMN2_COL"].asRGBA(textColor);
 
     textScaleMul = config["TEXT_SCALE"].asVec2d({1.0f, 1.0f});
     titleScaleMul = config["TITLE_SCALE"].asVec2d({1.25f, 1.25f});
@@ -60,6 +61,7 @@ void MenuUi::ReadConfig()
     textStyle = config["TEXT_STYLE"].asInt(1);
     titleStyle = config["TITLE_STYLE"].asInt(1);
     menuStyle = config["MENU_STYLE"].asInt(0);
+    flipInterface = config["FLIP_INTERFACE"].asBool(false);
 }
 
 void MenuUi::ReadHeaderInfo()
@@ -140,9 +142,11 @@ void MenuUi::WrapXCenteredPrint(char* pGXT, CRect windowRect)
 void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont)
 {
     tMenuPanel* pMenuPanel = MenuNumber[panelId];
-    CVector2D menuPos = {RsGlobal.maximumWidth/ 64.0f, 0};  
-    float hBoxHeight = RsGlobal.maximumHeight / 30.0f * (menuStyle == MOBILE_STYLE ? 1.5f : 1.0f);
+    float textPaddingX = RsGlobal.maximumWidth/ 64.0f;
+    CVector2D menuPos = {textPaddingX, 0};  
+    float hBoxHeight = RsGlobal.maximumHeight / 30.0f * (menuStyle == NORMAL_STYLE ? 1.0f : 1.75f);
     float menuWidth = RsGlobal.maximumWidth / 3.5f;
+    float headerPadding = SCREEN_MULTIPLIER(125.0f);
 
     // ---------------------------------------------------
     // font stuff 
@@ -155,8 +159,15 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
     CFont::SetOrientation(eFontAlignment::ALIGN_LEFT);
     CFont::SetDropColor(CRGBA(0, 0, 0, 0));
 
+    if (menuStyle == DE_STYLE)
+    {
+        CRect textRect;
+        CFont::GetTextRect(&textRect, 0, 0, &pMenuPanel->m_acTitle[0]);
+        headerPadding = textRect.top - textRect.bottom + SCREEN_MULTIPLIER(20.0f);
+    }
+
     // hide the help message since it covers the menu top
-    if (menuStyle == MOBILE_STYLE)
+    if (menuStyle == MOBILE_STYLE || menuStyle == DE_STYLE)
     {
         CHud::m_bHelpMessagePermanent = false;
     }
@@ -171,13 +182,16 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
         // Search for header sprites
         CSprite2d *pLogo = nullptr, *pPattern = nullptr;
 
-        for (auto &data : vecHeaders)
+        if (menuStyle == NORMAL_STYLE)
         {
-            if (data.gxtName == pMenuPanel->m_acTitle)
+            for (auto &data : vecHeaders)
             {
-                pLogo = data.m_pLogo;
-                pPattern = data.m_pPattern;
-                break; 
+                if (data.gxtName == pMenuPanel->m_acTitle)
+                {
+                    pLogo = data.m_pLogo;
+                    pPattern = data.m_pPattern;
+                    break; 
+                }
             }
         }
 
@@ -188,6 +202,14 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
             headerRect.left = 0.0f;
             headerRect.right = RsGlobal.maximumWidth / 3.75f;
         }
+        else if (menuStyle == DE_STYLE)
+        {
+            headerRect.top = SCREEN_MULTIPLIER(80.0f);
+            headerRect.left = SCREEN_MULTIPLIER(80.0f);
+            headerRect.right = RsGlobal.maximumWidth / 3.75f;
+            menuPos.x += headerRect.left;
+            menuPos.y = headerRect.top - hBoxHeight/2;
+        }
         else
         {
             headerRect.top = pMenuPanel->m_vPosn.y;
@@ -196,19 +218,29 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
             menuPos.x += headerRect.left;
             menuPos.y = headerRect.top;
         }
-        headerRect.bottom = headerRect.top + HEADER_PADDING + hBoxHeight;
 
+        headerRect.bottom = headerRect.top + headerPadding + hBoxHeight;
+        
         // draw title sprites if available or go with text
-        if (pPattern && pPattern->m_pTexture)
+        if (pPattern && pPattern->m_pTexture && menuStyle == NORMAL_STYLE)
         {
             pPattern->Draw(headerRect, CRGBA(255, 255, 255, 255));
         }
         else
         {
-            CSprite2d::DrawRect(headerRect, titleBgColor);
+            if (menuStyle == DE_STYLE)
+            {
+                CRect temp = headerRect;
+                temp.bottom -= hBoxHeight;
+                CSprite2d::DrawRect(temp, titleBgColor);
+            }
+            else
+            {
+                CSprite2d::DrawRect(headerRect, titleBgColor);
+            }
         }
 
-        if (pLogo && pLogo->m_pTexture)
+        if (pLogo && pLogo->m_pTexture && menuStyle == NORMAL_STYLE)
         {
             CRect logoRect = headerRect;
             bool headers = false;
@@ -234,10 +266,19 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
         }
         else
         {
-            CFont::SetOrientation(eFontAlignment::ALIGN_CENTER);
+            CFont::SetOrientation((menuStyle == DE_STYLE)? eFontAlignment::ALIGN_LEFT : eFontAlignment::ALIGN_CENTER);
             CFont::SetFontStyle(titleStyle);
             CFont::SetScale(titleScale.x, titleScale.y);
-            WrapXCenteredPrint(pMenuPanel->m_acTitle, headerRect);
+
+            if (menuStyle == DE_STYLE)
+            {
+                float textPosY = headerRect.top + SCREEN_MULTIPLIER(10.0f);
+                CFont::PrintString(headerRect.left + textPaddingX, textPosY, TheText.Get(pMenuPanel->m_acTitle));
+            }
+            else
+            {
+                WrapXCenteredPrint(pMenuPanel->m_acTitle, headerRect);
+            }
             CFont::SetFontStyle(textStyle);
             CFont::SetOrientation(eFontAlignment::ALIGN_LEFT);
         }
@@ -249,9 +290,18 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
         textRect.left = headerRect.left;
         textRect.right = headerRect.right;
 
+        if (menuStyle == DE_STYLE)
+        {
+            textRect.top = headerRect.bottom - hBoxHeight/2;
+        }
+        else
+        {
+            textRect.top = headerRect.bottom;
+        }
+
         if (menuStyle == MOBILE_STYLE)
         {
-            textRect.bottom = screen::GetScreenHeight() - hBoxHeight;
+            textRect.bottom = screen::GetScreenHeight();
         }
         else
         {
@@ -263,23 +313,29 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
 
         // ---------------------------------------------------
         // Draw footer section
-        CRect footerRect;
-        footerRect.top = textRect.bottom;
-        footerRect.bottom = footerRect.top + hBoxHeight;
-        footerRect.left = textRect.left;
-        footerRect.right = textRect.right;
-        CSprite2d::DrawRect(footerRect, titleBgColor);
 
-        // Draw selection sprite
-        float posX = footerRect.left + (footerRect.right - footerRect.left - hBoxHeight)/2;
-        menuSelectorSprite.Draw(posX, footerRect.top, hBoxHeight, hBoxHeight, textColor);
+        if (menuStyle == NORMAL_STYLE)
+        {
+            CRect footerRect;
+            footerRect.top = textRect.bottom;
+            footerRect.bottom = footerRect.top + hBoxHeight;
+            footerRect.left = textRect.left;
+            footerRect.right = textRect.right;
+            CSprite2d::DrawRect(footerRect, titleBgColor);
+
+            // Draw selection sprite
+            float posX = footerRect.left + (footerRect.right - footerRect.left - hBoxHeight)/2;
+            menuSelectorSprite.Draw(posX, footerRect.top, hBoxHeight, hBoxHeight, textColor);
+        }
 
         // ---------------------------------------------------
         // Draw selection box
         CRect selectRect;
         selectRect.left = textRect.left;
         selectRect.right = textRect.right;
-        selectRect.top = headerRect.bottom + hBoxHeight * pMenuPanel->m_nSelectedRow;
+        selectRect.top = ((headerRect.bottom + hBoxHeight * pMenuPanel->m_nSelectedRow)
+            - ((menuStyle == DE_STYLE) ? hBoxHeight/2 : 0.0f));
+
         selectRect.bottom = selectRect.top + hBoxHeight;
         CSprite2d::DrawRect(selectRect, selectTextBgColor);
 
@@ -288,37 +344,58 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
 
     for (char column = 0; column < pMenuPanel->m_nNumColumns; ++column)
     {
+        CVector2D textPos;
+        float scaleX = textScale.x;
+        float fontWidth = 0.0f;
+
         // ---------------------------------------------------
         // Draw header texts
-        char* pHeader = TheText.Get(pMenuPanel->m_aacColumnHeaders[column]);
-        CVector2D textPos
-        {
-            menuPos.x + (column ? pMenuPanel->m_afColumnWidth[column - 1] : 0),
-            menuPos.y + HEADER_PADDING
-        };
         
-        // adding extra padding for mobile
-        if (menuStyle == MOBILE_STYLE)
+        if (menuStyle == NORMAL_STYLE)
         {
-            textPos.x += 10.0f;
-            textPos.y += 5.0f;
+            textPos =   
+            {
+                menuPos.x + (column ? pMenuPanel->m_afColumnWidth[column - 1] : 0),
+                menuPos.y + headerPadding
+            };
+
+            char* pHeader = TheText.Get(pMenuPanel->m_aacColumnHeaders[column]);
+
+            fontWidth = CFont::GetStringWidth(pHeader, true, false);
+            if (fontWidth > menuWidth)
+            {
+                scaleX = scaleX - 1 + menuWidth / fontWidth;
+            }
+
+            CFont::SetColor(titleColor);
+            CFont::SetScale(scaleX, textScale.y);
+            CFont::PrintString(textPos.x, textPos.y, pHeader);
+            textPos.y += hBoxHeight;
+        }
+        else 
+        {
+            textPos =   
+            {
+                menuPos.x,
+                menuPos.y + headerPadding
+            };
+
+            CRect textRect;
+            CFont::GetTextRect(&textRect, 0, 0, (char*)"DummyText");
+
+            if (column == 1)
+            {
+                textPos.y += hBoxHeight + textRect.top - textRect.bottom - SCREEN_MULTIPLIER(10.0f);
+            }
+            else // column == 0
+            {
+                textPos.y += hBoxHeight; 
+            }
         }
 
-        float scaleX = textScale.x;
-        float fontWidth = CFont::GetStringWidth(pHeader, true, false);
-        if (fontWidth > menuWidth)
-        {
-            scaleX = scaleX - 1 + menuWidth / fontWidth;
-        }
-
-        CFont::SetColor(titleColor);
-        CFont::SetScale(scaleX, textScale.y);
-        CFont::PrintString(textPos.x, textPos.y, pHeader);
 
         // ---------------------------------------------------
         // Draw texts
-        textPos.y += hBoxHeight;
-
         for (char row = 0; row < pMenuPanel->m_nNumRows; ++row)
         {
             char pText[400];
@@ -335,7 +412,16 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
                 scaleX = scaleX - 1 + menuWidth / fontWidth;
             }
 
-            CRGBA color = textColor;
+            CRGBA color;
+            if (column == 0) // first column
+            {
+                color = textColor;
+            }
+            else // 2nd column
+            {
+                color = column2color;
+            }
+
             if (pMenuPanel->m_abRowSelectable[row])
             {
                 if (row == pMenuPanel->m_nSelectedRow)
@@ -346,7 +432,7 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
             else
             {
                 // Draw checkmark
-                if (column == pMenuPanel->m_nNumColumns-1)
+                if (menuStyle == NORMAL_STYLE && column == pMenuPanel->m_nNumColumns-1)
                 {
                     float posX = textPos.x + fontWidth;
                     float posY = textPos.y;
@@ -366,10 +452,10 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
                 }
                 color = grayTextColor;
             }
-
             CFont::SetColor(color);
             CFont::SetScale(scaleX, textScale.y);
             CFont::PrintString(textPos.x, textPos.y, pText);   
+
             textPos.y += hBoxHeight;
         }
 

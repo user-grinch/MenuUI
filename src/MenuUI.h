@@ -3,14 +3,13 @@
 #include <CSprite2d.h>
 #include <vector>
 
-#define HEADER_PADDING 75.0f
-
 using namespace plugin;
 
 enum MENU_STYLE 
 {
     NORMAL_STYLE,
     MOBILE_STYLE,
+    DE_STYLE,
 };
 
 class MenuUi 
@@ -25,12 +24,13 @@ private:
 
     // config
     static inline CRGBA windowBgColor, titleBgColor, textColor, titleColor, 
-                    selectTextBgColor, selectTextColor, grayTextColor;
+                    selectTextBgColor, selectTextColor, grayTextColor, column2color;
     static inline CVector2D textScaleMul, titleScaleMul;
     static inline int menuStyle, textStyle, titleStyle;
 
     static inline CSprite2d menuBoughtSprite, menuSelectorSprite;
-
+    static inline bool flipInterface;
+    
     static void ReadConfig();
     static void ReadHeaderInfo();
     static void WrapXCenteredPrint(char* pGXT, CRect windowRect);

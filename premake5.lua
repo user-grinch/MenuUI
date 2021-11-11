@@ -4,7 +4,7 @@
 ----------------------------
 -- Environment vars
 PSDK_DIR = os.getenv("PLUGIN_SDK_DIR")
-GTASA_DIR = "C:/Work/GTASanAndreas"
+GTASA_DIR = "F:/GTASanAndreas"
 ----------------------------
 
 workspace "MenuUI"
