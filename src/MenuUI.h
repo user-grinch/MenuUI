@@ -17,8 +17,9 @@ class MenuUi
 private:
     struct HeaderInfo
     {
-        std::string gxtName;
+        std::string m_nName;
         CSprite2d *m_pLogo, *m_pPattern;
+        int m_nInteriorID;
     };
     static inline std::vector<HeaderInfo> vecHeaders;
 

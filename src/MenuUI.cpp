@@ -82,14 +82,15 @@ void MenuUi::ReadHeaderInfo()
             }
 
             char gxtName[64], logoPath[64], patternPath[64];
-            if (sscanf(line.c_str(), "%s %s %s", gxtName, logoPath, patternPath) == 3)
+            int intID;
+            if (sscanf(line.c_str(), "%s %s %s %d", gxtName, logoPath, patternPath, &intID) == 4)
             {
                 CSprite2d *pLogo = new CSprite2d();
                 CSprite2d *pPattern = new CSprite2d();
                 pLogo->m_pTexture = LoadPNGTexture(root + logoPath);
                 pPattern->m_pTexture = LoadPNGTexture(root + patternPath);
 
-                vecHeaders.push_back({gxtName, pLogo, pPattern});
+                vecHeaders.push_back({gxtName, pLogo, pPattern, intID});
             }
         }
     }
@@ -181,12 +182,12 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
 
         // Search for header sprites
         CSprite2d *pLogo = nullptr, *pPattern = nullptr;
-
+        char * text = pMenuPanel->m_acTitle;
         if (menuStyle == NORMAL_STYLE)
         {
             for (auto &data : vecHeaders)
             {
-                if (data.gxtName == pMenuPanel->m_acTitle)
+                if (data.m_nName == pMenuPanel->m_acTitle && FindPlayerPed()->m_nAreaCode == data.m_nInteriorID)
                 {
                     pLogo = data.m_pLogo;
                     pPattern = data.m_pPattern;

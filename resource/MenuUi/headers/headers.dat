@@ -1,16 +1,29 @@
 ############################################################
 # Menu header sprites
 #
-# Format: GXT_NAME LOGO_PATH PATTERN_PATH
+# Format: GXT_NAME LOGO_PATH PATTERN_PATH INTERIOR_ID
 ############################################################
 
-AMMUN       ammu-nation.png     ammu-nation_pattern.png
-AMMUN1      ammu-nation.png     ammu-nation_pattern.png
-AMMUN2      ammu-nation.png     ammu-nation_pattern.png
-AMMUN3      ammu-nation.png     ammu-nation_pattern.png
-AMMUN4      ammu-nation.png     ammu-nation_pattern.png
-AMMUN5      ammu-nation.png     ammu-nation_pattern.png
-FOODCHO     pizza.png   	pizza_pattern.png
-HAIRCHO     barber.png   	barber_pattern.png
-CLOTCHO     binco.png           binco_pattern.png
-CSPAWN      car_spawner.png     car_spawner_pattern.png
+AMMUN       ammu-nation.png     ammu-nation_pattern.png     0
+AMMUN1      ammu-nation.png     ammu-nation_pattern.png     0
+AMMUN2      ammu-nation.png     ammu-nation_pattern.png     0
+AMMUN3      ammu-nation.png     ammu-nation_pattern.png     0
+AMMUN4      ammu-nation.png     ammu-nation_pattern.png     0
+AMMUN5      ammu-nation.png     ammu-nation_pattern.png     0
+CLOTCHO     binco.png           binco_pattern.png           15
+CLOTCHO     ds.png              ds_pattern.png              14
+CLOTCHO     prolaps.png         prolaps_pattern.png         3
+CLOTCHO     suburban.png        suburban_pattern.png        1
+CLOTCHO     victim.png          victim_pattern.png          5
+CLOTCHO     zip.png             zip_pattern.png             18
+CSPAWN      car_spawner.png     car_spawner_pattern.png     0
+FOODCHO     burger.png   	    burger_pattern.png          10
+FOODCHO     bell.png   	        bell_pattern.png            9
+FOODCHO     pizza.png   	    pizza_pattern.png           5
+HAIRCHO     barber.png   	    barber_pattern.png          0
+TATTO       tattoos.png   	    tattoos_pattern.png         3
+TATTO       tattoos.png   	    tattoos_pattern.png         16
+TATTO       tattoos.png   	    tattoos_pattern.png         17
+UPGRADE     modgarage.png   	modgarage_pattern.png       1
+UPGRADE     loco.png   	        loco_pattern.png            2
+UPGRADE     waa.png   	        waa_pattern.png             3
