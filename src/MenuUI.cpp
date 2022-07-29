@@ -187,7 +187,8 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
         {
             for (auto &data : vecHeaders)
             {
-                if (data.m_nName == pMenuPanel->m_acTitle && FindPlayerPed()->m_nAreaCode == data.m_nInteriorID)
+                if (data.m_nName == pMenuPanel->m_acTitle 
+                && (FindPlayerPed()->m_nAreaCode == data.m_nInteriorID || data.m_nInteriorID == -1))
                 {
                     pLogo = data.m_pLogo;
                     pPattern = data.m_pPattern;
