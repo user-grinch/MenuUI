@@ -19,6 +19,7 @@ CLOTCHO     suburban.png        suburban_pattern.png        1
 CLOTCHO     victim.png          victim_pattern.png          5
 CLOTCHO     zip.png             zip_pattern.png             18
 CSPAWN      car_spawner.png     car_spawner_pattern.png     -1
+FOODCHO     rusty_brown.png   	rusty_brown_pattern.png          17
 FOODCHO     burger.png   	    burger_pattern.png          10
 FOODCHO     bell.png   	        bell_pattern.png            9
 FOODCHO     pizza.png   	    pizza_pattern.png           5
