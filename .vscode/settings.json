@@ -74,6 +74,11 @@
         "xtr1common": "cpp",
         "xtree": "cpp",
         "xutility": "cpp",
-        "set": "cpp"
+        "set": "cpp",
+        "codecvt": "cpp",
+        "coroutine": "cpp",
+        "expected": "cpp",
+        "numbers": "cpp",
+        "random": "cpp"
     }
 }

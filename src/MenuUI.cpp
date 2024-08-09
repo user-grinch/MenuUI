@@ -183,12 +183,24 @@ void __cdecl MenuUi::DisplayStandardMenu(unsigned char panelId, bool bBrightFont
         // Search for header sprites
         CSprite2d *pLogo = nullptr, *pPattern = nullptr;
         char * text = pMenuPanel->m_acTitle;
+        unsigned char areaCode = FindPlayerPed()->m_nAreaCode;
+
+        // wardrobe & Ds use same interior
+        if (areaCode == 14) 
+        {
+            CVector pos = FindPlayerPed()->GetPosition();
+            if (-35.0f > pos.y && pos.y > -45.0f) // wardrobe
+            {
+                areaCode = 142;
+            }
+        }
+
         if (menuStyle == NORMAL_STYLE)
         {
             for (auto &data : vecHeaders)
             {
                 if (data.m_nName == pMenuPanel->m_acTitle 
-                && (FindPlayerPed()->m_nAreaCode == data.m_nInteriorID || data.m_nInteriorID == -1))
+                && (areaCode == data.m_nInteriorID || data.m_nInteriorID == -1))
                 {
                     pLogo = data.m_pLogo;
                     pPattern = data.m_pPattern;
